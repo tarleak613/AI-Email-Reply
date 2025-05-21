@@ -1,15 +1,25 @@
-# Use Eclipse Temurin JDK 21 as the base image
-FROM eclipse-temurin:21-jdk
+# ------------ Stage 1: Build the JAR ------------
+FROM maven:3.9.6-eclipse-temurin-21 as builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy Maven build output from target directory
-COPY target/AI-Email-Reply-0.0.1-SNAPSHOT.jar app.jar
+# Copy all project files
+COPY . .
 
-# Set the port (Render injects PORT env var)
+# Build the project
+RUN mvn clean package -DskipTests
+
+# ------------ Stage 2: Run the app ------------
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+# Copy JAR from build stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Set the port Render expects
 ENV PORT 8080
 EXPOSE 8080
 
-# Run the app
+# Run the JAR
 CMD ["java", "-jar", "app.jar"]
